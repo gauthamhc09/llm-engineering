@@ -1,10 +1,10 @@
 # Embeddings
 
-> "Embeddings transform token IDs into meaningful vectors that capture semantic relationships."
+> "Embeddings transform token IDs into dense vectors that capture semantic meaning."
 
-**Difficulty:** 🟢 Beginner
-**Estimated Reading Time:** 15 minutes
-**Prerequisites:** Training vs Inference
+**Difficulty:** 🟢 Beginner  
+**Estimated Reading Time:** 15 minutes  
+**Prerequisites:** Training vs Inference  
 **Last Updated:** July 2026
 
 ---
@@ -13,9 +13,10 @@
 
 By the end of this chapter, you will understand:
 
-- Why token IDs are not enough for an LLM
+- Why token IDs are not enough
 - What embeddings are
-- How embedding vectors are created
+- How the embedding layer works
+- What an embedding matrix is
 - Why similar words have similar embeddings
 - How embeddings become the input to the Transformer
 
@@ -23,7 +24,7 @@ By the end of this chapter, you will understand:
 
 # Why Should I Care?
 
-Earlier, we learned that the tokenizer converts text into token IDs.
+In the previous chapter, we learned that the tokenizer converts text into token IDs.
 
 For example:
 
@@ -35,17 +36,15 @@ For example:
 [40, 3021, 15836]
 ```
 
-But here's an important question:
+But here's the question:
 
-> Can a neural network understand that token **15836** represents "AI"?
+Can a Transformer understand the number **15836**?
 
-No.
+The answer is **no**.
 
-To a neural network, **15836 is just an integer**.
+To the model, `15836` is simply an identifier. It doesn't contain any information about the meaning of the word.
 
-Numbers like 1, 25, or 15836 have no meaning by themselves.
-
-We need a richer numerical representation.
+Before the Transformer can process language, each token ID must be converted into a meaningful numerical representation.
 
 That representation is called an **embedding**.
 
@@ -53,69 +52,91 @@ That representation is called an **embedding**.
 
 # The Big Idea
 
-A token ID is simply an index.
-
-An embedding is a dense vector that captures the meaning of that token.
-
-Think of it like this:
+Think of token IDs like student roll numbers.
 
 ```
-Text
+Roll Number
 
 ↓
 
-Tokenizer
-
-↓
-
-Token IDs
-
-↓
-
-Embeddings
-
-↓
-
-Transformer
+1024
 ```
 
-The Transformer never works directly with token IDs.
+Does the number **1024** tell you anything about the student?
 
-It works with embedding vectors.
+No.
+
+It is simply an identifier.
+
+Similarly,
+
+```
+Token ID
+
+↓
+
+15836
+```
+
+is only an identifier.
+
+The embedding layer transforms that identifier into a dense vector that the Transformer can understand.
+
+---
+
+# How It Works
+
+The complete pipeline now looks like this:
+
+```mermaid
+graph LR
+    A[User Prompt] --> B[Chat Template]
+    B --> C[Tokenizer]
+    C --> D[Token IDs]
+    D --> E[Embeddings]
+    E --> F[Transformer]
+    F --> G[Next Token]
+    G --> H[Decode]
+    H --> I[Response]
+
+```
+
+```
+
+The Transformer **never processes raw text**.
+
+It also **never processes token IDs directly**.
+
+Its real input is a sequence of embedding vectors.
 
 ---
 
 # Why Token IDs Are Not Enough
 
-Imagine assigning IDs to fruits.
+Imagine these IDs:
 
-| Fruit | ID |
-|--------|---:|
-| Apple | 1 |
-| Mango | 2 |
-| Car | 3 |
+| Word | Token ID |
+|------|---------:|
+| Apple | 101 |
+| Mango | 102 |
+| Car | 103 |
 
-Does the neural network know that Apple and Mango are more similar than Apple and Car?
+From these IDs alone:
 
-No.
+- Is Apple similar to Mango?
+- Is Apple more similar to Car?
 
-The IDs are arbitrary.
+The answer is no.
 
-```
-Apple → 1
+The IDs contain no semantic information.
 
-Mango → 2
-
-Car → 3
-```
-
-The numbers don't contain any semantic information.
+They are simply indexes.
 
 ---
 
 # What is an Embedding?
 
-An embedding is a list of floating-point numbers.
+An embedding is a dense vector of floating-point numbers.
 
 Example:
 
@@ -128,52 +149,61 @@ Token ID
 
 Embedding
 
-[0.23, -0.81, 1.14, 0.55, ...]
+[0.41, -0.28, 0.97, ..., 1.24]
 ```
 
-Real models typically use vectors with dimensions such as:
+Instead of one integer,
+
+the model now has hundreds or thousands of values describing that token.
+
+Modern LLMs commonly use embedding dimensions such as:
 
 - 768
 - 1024
 - 4096
 - 8192
 
-Each value contributes to how the model represents the token.
+The exact size depends on the model architecture.
 
 ---
 
-# Embedding Matrix
+# The Embedding Matrix
 
 Where do these vectors come from?
 
-They are stored in an **Embedding Matrix**.
+They are stored in a large learnable table called the **embedding matrix**.
 
-Imagine a table:
+Conceptually:
 
-| Token ID | Embedding |
-|----------:|-----------|
-| 0 | [...] |
-| 1 | [...] |
-| 2 | [...] |
-| 3 | [...] |
-| ... | ... |
-| 15836 | [...] |
+```
+Embedding Matrix
 
-When the tokenizer outputs:
++--------------------------------------+
+| Token ID | Embedding Vector          |
++--------------------------------------+
+| 0        | [ ... ]                   |
+| 1        | [ ... ]                   |
+| 2        | [ ... ]                   |
+| ...      | ...                       |
+| 15836    | [0.41, -0.28, ...]        |
++--------------------------------------+
+```
+
+When the tokenizer produces:
 
 ```
 15836
 ```
 
-the model performs a lookup in this table.
-
-No searching or calculation is needed.
-
-It's simply:
+the model simply performs a lookup:
 
 ```
 Embedding = EmbeddingMatrix[15836]
 ```
+
+No search is involved.
+
+It is a direct index lookup.
 
 ---
 
@@ -185,7 +215,7 @@ Input:
 I love AI
 ```
 
-Step 1:
+Step 1
 
 ```
 Tokenizer
@@ -195,84 +225,72 @@ Tokenizer
 [40, 3021, 15836]
 ```
 
-Step 2:
+Step 2
 
 ```
-Embedding Lookup
+Embedding Layer
 
 ↓
 
 [
- Vector1,
- Vector2,
- Vector3
+Vector₁,
+Vector₂,
+Vector₃
 ]
 ```
 
-These vectors become the input to the Transformer.
+These vectors are then passed to the Transformer.
 
 ---
 
-# Similar Words Have Similar Embeddings
+# Why Similar Words Have Similar Embeddings
 
-One of the most powerful properties of embeddings is that similar concepts are located close together in vector space.
+One of the remarkable properties of embeddings is that semantically similar words often have similar vectors.
 
 For example:
 
 ```
-King
-Queen
-Prince
-Princess
+Doctor
+Nurse
+Hospital
 ```
 
-will have embeddings that are closer to each other than:
+tend to be closer together than:
 
 ```
-King
+Doctor
 Banana
-Car
+Airplane
 Ocean
 ```
 
-This helps the model recognize relationships between words.
+The model learns these relationships during training.
 
----
-
-# High-Dimensional Space
-
-Humans think in 3D space.
-
-Embeddings exist in hundreds or thousands of dimensions.
-
-For example:
-
-```
-Embedding Dimension = 4096
-```
-
-You can't visualize 4096 dimensions directly, but mathematically the model can compare vectors and measure how similar they are.
+This allows it to generalize beyond exact word matches.
 
 ---
 
 # Visual Diagram
 
 ```
-Text
- │
- ▼
-Tokenizer
- │
- ▼
-Token IDs
- │
- ▼
-Embedding Lookup
- │
- ▼
-Dense Vectors
- │
- ▼
+                Tokenizer
+
+"I love AI"
+        │
+        ▼
+[40, 3021, 15836]
+        │
+        ▼
+Embedding Layer
+        │
+        ▼
+┌─────────────┐
+│ Vector 1    │
+│ Vector 2    │
+│ Vector 3    │
+└─────────────┘
+        │
+        ▼
 Transformer
 ```
 
@@ -291,24 +309,24 @@ model = AutoModel.from_pretrained(
     "meta-llama/Meta-Llama-3.1-8B"
 )
 
-inputs = tokenizer("Hello", return_tensors="pt")
+inputs = tokenizer(
+    "Hello World",
+    return_tensors="pt"
+)
 
 outputs = model(**inputs)
 ```
 
-Here:
-
-- `tokenizer()` converts text into token IDs.
-- The model internally converts those IDs into embeddings before passing them through the Transformer.
+Although we don't explicitly create embeddings in this code, the model performs the embedding lookup automatically before the Transformer layers begin processing.
 
 ---
 
 # Engineering Notes
 
 - The embedding layer is the first learnable layer of an LLM.
-- Embeddings are learned during training and updated along with the rest of the model.
-- The embedding matrix can contain millions of parameters.
-- Models with larger hidden dimensions have larger embedding vectors.
+- Embeddings are updated during training using backpropagation.
+- The embedding matrix often contains tens or hundreds of millions of parameters.
+- Larger models usually have higher-dimensional embeddings.
 
 ---
 
@@ -318,27 +336,27 @@ Here:
 
 No.
 
-Token IDs are simply identifiers.
+They are simply identifiers.
 
-The semantic information comes from the embedding vectors.
+The meaning comes from the embedding vectors.
 
 ---
 
-### ❌ Embeddings are created by the tokenizer.
+### ❌ The tokenizer creates embeddings.
 
 No.
 
-The tokenizer only outputs token IDs.
+The tokenizer only produces token IDs.
 
 The embedding layer inside the model converts those IDs into vectors.
 
 ---
 
-### ❌ Every model shares the same embeddings.
+### ❌ Embeddings are fixed.
 
-False.
+No.
 
-Each model learns its own embedding matrix during training.
+They are learned during training and continue to improve as training progresses.
 
 ---
 
@@ -346,35 +364,33 @@ Each model learns its own embedding matrix during training.
 
 ### What is an embedding?
 
-An embedding is a dense vector representation of a token that captures semantic information and serves as input to the Transformer.
+An embedding is a dense vector representation of a token that captures semantic information.
 
 ---
 
 ### Why can't we feed token IDs directly into the Transformer?
 
-Because token IDs are arbitrary integers and do not encode semantic relationships.
+Because token IDs are arbitrary integers that contain no semantic meaning.
 
 ---
 
-### What is the embedding matrix?
+### What is an embedding matrix?
 
-It is a learnable lookup table that maps every token ID to a dense vector.
+A learnable lookup table that maps every token ID to a dense vector.
 
 ---
 
-### Are embeddings learned or fixed?
+### How are embeddings learned?
 
-Embeddings are learned during training and updated through backpropagation.
+They are initialized randomly and updated during training through backpropagation.
 
 ---
 
 # 🧠 First Principles
 
-The Transformer cannot understand integers like `15836`.
+A Transformer understands vectors—not words and not token IDs.
 
-Its real input is a matrix of vectors.
-
-Everything begins with converting token IDs into meaningful numerical representations.
+The embedding layer is responsible for translating token IDs into the numerical language of neural networks.
 
 ---
 
@@ -382,23 +398,23 @@ Everything begins with converting token IDs into meaningful numerical representa
 
 The tokenizer answers:
 
-> "Which token is this?"
+> **"Which token is this?"**
 
 The embedding layer answers:
 
-> "What does this token represent mathematically?"
+> **"What does this token mean mathematically?"**
 
-Without embeddings, the Transformer would only see meaningless integers.
+Without embeddings, every token would just be an arbitrary number.
 
 ---
 
 # Summary
 
-- Token IDs are identifiers, not meaning.
+- Token IDs are identifiers.
 - Embeddings convert token IDs into dense vectors.
-- Similar words have similar embedding vectors.
+- Similar concepts tend to have similar embeddings.
 - The embedding matrix is learned during training.
-- The Transformer receives embeddings, not token IDs.
+- The Transformer receives embeddings as its input.
 
 ---
 
@@ -416,4 +432,4 @@ Without embeddings, the Transformer would only see meaningless integers.
 
 ➡️ Positional Encoding
 
-Learn how Transformers understand the order of words, since embeddings alone do not contain sequence information.
+Embeddings capture the meaning of tokens, but they do not capture their order. In the next chapter, we'll learn how Transformers understand the sequence of words.
