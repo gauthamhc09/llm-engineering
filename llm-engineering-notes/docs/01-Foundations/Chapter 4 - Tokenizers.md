@@ -1,12 +1,23 @@
 # Tokenizers
 
-**Difficulty:** 🟢 Beginner
-**Prerequisites:** Tokens vs Words
-**Estimated Reading Time:** 10 minutes
+**Difficulty:** 🟢 Beginner  
+**Estimated Reading Time:** 10 minutes  
+**Prerequisites:** Tokens vs Words  
+**Last Updated:** July 2026
 
 > "A tokenizer is the bridge between human language and machine language."
 
 ---
+
+## Learning Objectives
+
+By the end of this chapter, you will understand:
+
+- What a tokenizer is
+- Why LLMs need tokenizers
+- Encoding vs Decoding
+- Vocabulary and Token IDs
+- Why every model has its own tokenizer
 
 # Why should I care?
 
